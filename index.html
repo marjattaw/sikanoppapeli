@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sika-noppapeli</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="container">
+        <h1>Sika-noppapeli</h1>
+        
+        <div id="setup">
+            <div class="form-group">
+                <label for="players">Pelaajien määrä:</label>
+                <input type="number" id="players" min="2" max="10" placeholder="2-10" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="diceCount">Valitse noppien määrä:</label>
+                <select id="diceCount">
+                    <option value="1">1 noppa</option>
+                    <option value="2">2 noppaa</option>
+                </select>
+            </div>
+            
+            <button onclick="startGame()">Aloita peli</button>
+            <p id="error" style="color: red; display: none;"></p>
+        </div>
+
+        <div id="game" style="display: none;">
+            <h2>Pelaajat</h2>
+            <div id="playerList"></div>
+            <h2 id="currentPlayer"></h2>
+            <p id="roundScore"></p>
+            <button onclick="rollDice()">Heitä noppaa</button>
+            <button onclick="hold()">Pidä pisteet</button>
+            <p id="diceResult"></p>
+            <img id="pigImage" src="images/possu.jpg" alt="possu" style="display: none;">
+            <br><br>
+            <button id="resetButton" onclick="resetGame()">Aloita alusta</button>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let currentPlayerIndex = 0;
+        let roundScore = 0;
+        let winningScore = 100;
+        let diceCount = 1;
+
+        function startGame() {
+            const playerCount = parseInt(document.getElementById("players").value);
+            const errorElement = document.getElementById("error");
+
+            // Tarkistetaan, että pelaajamäärä on syötetty ja että se on validi
+            if (isNaN(playerCount) || playerCount < 2 || playerCount > 10) {
+                errorElement.textContent = "Ilmoita pelaajien määrä (2-10 pelaajaa) ennen pelin aloittamista!";
+                errorElement.style.display = "block";
+                return;
+            }
+
+            // Piilotetaan virheilmoitus, jos pelaajamäärä on kunnossa
+            errorElement.style.display = "none";
+
+            diceCount = parseInt(document.getElementById("diceCount").value);
+            players = [];
+            for (let i = 0; i < playerCount; i++) {
+                const name = prompt(`Syötä pelaajan ${i + 1} nimi:`);
+                players.push({ name: name, score: 0 });
+            }
+            document.getElementById("playerList").innerHTML = players.map(p => `<p>${p.name}: ${p.score} pistettä</p>`).join('');
+            document.getElementById("setup").style.display = "none";
+            document.getElementById("game").style.display = "block";
+
+            // Näytä possun kuva pelin alkaessa
+            document.getElementById("pigImage").style.display = "block";
+
+            updateGameInfo();
+        }
+
+        function rollDice() {
+            const pigImage = document.getElementById("pigImage");
+            pigImage.classList.remove("rotate");
+            void pigImage.offsetWidth;
+            pigImage.classList.add("rotate");
+
+            let dice1 = Math.floor(Math.random() * 6) + 1;
+            let dice2 = diceCount === 2 ? Math.floor(Math.random() * 6) + 1 : 0;
+            document.getElementById("diceResult").textContent = `Heitit: ${dice1}${diceCount === 2 ? ' ja ' + dice2 : ''}`;
+            
+            if (diceCount === 1) {
+                if (dice1 === 1) {
+                    roundScore = 0;
+                    switchPlayer();
+                } else {
+                    roundScore += dice1;
+                }
+            } else {
+                if (dice1 === 1 && dice2 === 1) {
+                    roundScore += 25;
+                } else if (dice1 === 1 || dice2 === 1) {
+                    roundScore = 0;
+                    switchPlayer();
+                } else if (dice1 === dice2) {
+                    roundScore += (dice1 + dice2) * 2;
+                } else {
+                    roundScore += dice1 + dice2;
+                }
+            }
+
+            document.getElementById("roundScore").textContent = `Vuoropisteet: ${roundScore}`;
+        }
+
+        function hold() {
+            players[currentPlayerIndex].score += roundScore;
+            roundScore = 0;
+            if (players[currentPlayerIndex].score >= winningScore) {
+                alert(`${players[currentPlayerIndex].name} voitti pelin!`);
+                resetGame();
+            } else {
+                switchPlayer();
+            }
+        }
+
+        function switchPlayer() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            roundScore = 0;
+            updateGameInfo();
+        }
+
+        function updateGameInfo() {
+            document.getElementById("playerList").innerHTML = players.map(p => `<p>${p.name}: ${p.score} pistettä</p>`).join('');
+            document.getElementById("currentPlayer").textContent = `Pelaajan vuoro: ${players[currentPlayerIndex].name}`;
+            document.getElementById("roundScore").textContent = `Vuoropisteet: ${roundScore}`;
+            document.getElementById("diceResult").textContent = "";
+        }
+
+        function resetGame() {
+            players = [];
+            currentPlayerIndex = 0;
+            roundScore = 0;
+            document.getElementById("setup").style.display = "block";
+            document.getElementById("game").style.display = "none";
+            document.getElementById("pigImage").style.display = "none";
+            document.getElementById("error").style.display = "none";
+        }
+    </script>
+</body>
+</html>
